@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Covariance Matrix — Interactive Guide</title>
+<style>
+:root{
+  --bg:#f7f7f5; --card:#fff; --text:#202124; --muted:#666;
+  --border:#ddd; --accent:#315efb; --accent2:#0f9d58;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  background:var(--bg);color:var(--text);line-height:1.55}
+.container{max-width:1100px;margin:auto;padding:28px 20px 70px}
+header{text-align:center;padding:35px 0 25px}
+h1{font-size:clamp(2.2rem,5vw,4rem);line-height:1.05;margin:0 0 14px}
+h2{margin-top:0;font-size:1.55rem}
+.subtitle{color:var(--muted);font-size:1.1rem;max-width:720px;margin:auto}
+.progress{height:6px;background:#e6e6e6;border-radius:10px;overflow:hidden;margin:10px 0 35px}
+.progress div{height:100%;width:0;background:var(--accent);transition:.4s}
+.card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:26px;
+  margin:22px 0;box-shadow:0 3px 12px #00000008}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:760px){.grid{grid-template-columns:1fr}}
+canvas{width:100%;height:350px;border:1px solid var(--border);border-radius:12px;background:#fff}
+.matrix{display:grid;grid-template-columns:repeat(2,110px);gap:2px;justify-content:center;
+  margin:18px auto;font-size:1.45rem}
+.matrix div{padding:18px;text-align:center;background:#eef2ff;border-radius:6px}
+.controls{display:flex;gap:18px;flex-wrap:wrap;align-items:center;margin:12px 0}
+label{font-weight:600}
+input[type=range]{width:220px;accent-color:var(--accent)}
+.value{font-family:ui-monospace,monospace;color:var(--accent);font-weight:700}
+button{border:0;border-radius:10px;padding:11px 16px;background:var(--accent);color:white;
+  font-weight:700;cursor:pointer}
+button.secondary{background:#e9e9e9;color:#222}
+button:hover{filter:brightness(.94)}
+.callout{border-left:5px solid var(--accent);background:#f0f3ff;padding:14px 17px;border-radius:8px}
+.good{border-left-color:var(--accent2);background:#eefaf4}
+.badge{display:inline-block;padding:4px 9px;border-radius:20px;background:#eee;font-size:.82rem;font-weight:700}
+.kicker{text-transform:uppercase;letter-spacing:.1em;color:var(--accent);font-size:.8rem;font-weight:800}
+.formula{font-family:Georgia,serif;text-align:center;font-size:1.35rem;padding:10px}
+#quiz .answer{display:none;margin-top:10px}
+#quiz .answer.show{display:block}
+.small{font-size:.9rem;color:var(--muted)}
+ul{padding-left:22px}
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+  <div class="kicker">Interactive ML Guide</div>
+  <h1>Covariance Matrix</h1>
+  <p class="subtitle">See what covariance actually means, manipulate the data, and watch the matrix change in real time.</p>
+</header>
+
+<div class="progress"><div id="progress"></div></div>
+
+<section class="card">
+  <div class="kicker">1 · The big idea</div>
+  <h2>Covariance asks: “Do these features move together?”</h2>
+  <div class="grid">
+    <div>
+      <p>Suppose each dot is one observation with two features, <b>X</b> and <b>Y</b>.</p>
+      <ul>
+        <li><b>Positive covariance:</b> X goes up → Y tends to go up.</li>
+        <li><b>Negative covariance:</b> X goes up → Y tends to go down.</li>
+        <li><b>Near zero:</b> no strong linear relationship.</li>
+      </ul>
+      <div class="callout"><b>Important:</b> covariance describes a linear relationship. Zero covariance does not necessarily mean the variables are completely unrelated.</div>
+    </div>
+    <canvas id="scatter1" width="700" height="350"></canvas>
+  </div>
+</section>
+
+<section class="card">
+  <div class="kicker">2 · Build the matrix</div>
+  <h2>Every feature gets a row and a column</h2>
+  <p>For two features, the covariance matrix is:</p>
+  <div class="matrix">
+    <div>Var(X)</div><div>Cov(X,Y)</div>
+    <div>Cov(Y,X)</div><div>Var(Y)</div>
+  </div>
+  <p>The <b>diagonal</b> contains each feature's variance. The <b>off-diagonal</b> contains how the two features vary together.</p>
+  <div class="formula">Σ = [ Var(X) &nbsp; Cov(X,Y) ; &nbsp; Cov(Y,X) &nbsp; Var(Y) ]</div>
+  <div class="callout good"><b>Notice:</b> Cov(X,Y) = Cov(Y,X), so a covariance matrix is symmetric.</div>
+</section>
+
+<section class="card">
+  <div class="kicker">3 · Play with it</div>
+  <h2>Change the relationship</h2>
+  <p>Drag the correlation slider. The points and covariance matrix update together.</p>
+  <div class="controls">
+    <label>Relationship:
+      <input id="corr" type="range" min="-0.95" max="0.95" step="0.05" value="0.70">
+      <span class="value" id="corrVal">0.70</span>
+    </label>
+    <button class="secondary" id="newData">New sample</button>
+  </div>
+  <div class="grid">
+    <div>
+      <canvas id="scatter2" width="700" height="350"></canvas>
+      <p class="small">The slope/direction shows the relationship; the spread shows the variances.</p>
+    </div>
+    <div>
+      <div class="matrix" id="liveMatrix">
+        <div id="vxx">1.00</div><div id="vxy">0.70</div>
+        <div id="vyx">0.70</div><div id="vyy">1.00</div>
+      </div>
+      <p><b>Diagonal:</b> how much each feature varies.</p>
+      <p><b>Off-diagonal:</b> how much the features vary together.</p>
+      <div class="callout" id="interpretation">Strong positive covariance: the features tend to increase together.</div>
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="kicker">4 · Why ML cares</div>
+  <h2>Covariance reveals the shape of your data</h2>
+  <div class="grid">
+    <div>
+      <canvas id="shapeCanvas" width="700" height="350"></canvas>
+    </div>
+    <div>
+      <p>Imagine plotting height and weight. If taller people tend to weigh more, the cloud of points stretches diagonally.</p>
+      <p>The covariance matrix captures that orientation mathematically.</p>
+      <div class="callout"><b>In PCA:</b> eigenvectors of the covariance matrix give the principal directions, while eigenvalues tell us how much variance lies along those directions.</div>
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="kicker">5 · From 2 features to many</div>
+  <h2>With n features, you get an n × n matrix</h2>
+  <p>For three features X₁, X₂, and X₃:</p>
+  <div class="formula">
+    Σ = ⎡ Var(X₁) &nbsp; Cov(X₁,X₂) &nbsp; Cov(X₁,X₃) ⎤<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;⎢ Cov(X₂,X₁) &nbsp; Var(X₂) &nbsp; Cov(X₂,X₃) ⎥<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;⎣ Cov(X₃,X₁) &nbsp; Cov(X₃,X₂) &nbsp; Var(X₃) ⎦
+  </div>
+  <p>So with <b>5 features</b>, your covariance matrix is <b>5 × 5</b>. Every cell answers a question about a pair of features.</p>
+</section>
+
+<section class="card" id="quiz">
+  <div class="kicker">6 · Check yourself</div>
+  <h2>Quick quiz</h2>
+  <p><b>Question:</b> If two features have a large negative covariance, what generally happens?</p>
+  <button onclick="showAnswer()">Show answer</button>
+  <div class="answer callout good" id="answer">When one feature increases, the other tends to decrease. Their relationship slopes downward.</div>
+</section>
+
+<section class="card">
+  <div class="kicker">Remember this</div>
+  <h2>Covariance matrix → PCA</h2>
+  <p style="font-size:1.15rem"><b>Variance</b> tells you how much one feature spreads out. <b>Covariance</b> tells you how two features move together. Put all of those values together, and you get the <b>covariance matrix</b>.</p>
+  <div class="callout"><b>For advanced ML:</b> covariance matrix → eigenvectors/eigenvalues → PCA → principal directions of variation.</div>
+</section>
+</div>
+
+<script>
+const randn = () => {
+  let u=0,v=0; while(u===0)u=Math.random(); while(v===0)v=Math.random();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+};
+let seed=0;
+
+function points(corr,n=110){
+  const a=[];
+  for(let i=0;i<n;i++){const x=randn(), z=randn(); a.push([x, corr*x+Math.sqrt(1-corr*corr)*z]);}
+  return a;
+}
+function drawScatter(canvas, pts){
+  const c=canvas.getContext('2d'), w=canvas.width, h=canvas.height;
+  c.clearRect(0,0,w,h); c.strokeStyle="#ddd"; c.lineWidth=1;
+  c.beginPath(); c.moveTo(45,h/2); c.lineTo(w-20,h/2); c.moveTo(w/2,15); c.lineTo(w/2,h-25); c.stroke();
+  c.fillStyle="#315efb";
+  pts.forEach(([x,y])=>{const px=w/2+x*65, py=h/2-y*65; c.beginPath();c.arc(px,py,3.5,0,Math.PI*2);c.fill();});
+  c.fillStyle="#666"; c.font="14px system-ui"; c.fillText("X",w-30,h/2-8); c.fillText("Y",w/2+8,25);
+}
+function covariance(pts){
+  const n=pts.length, mx=pts.reduce((s,p)=>s+p[0],0)/n, my=pts.reduce((s,p)=>s+p[1],0)/n;
+  let xx=0,yy=0,xy=0;
+  pts.forEach(p=>{xx+=(p[0]-mx)**2;yy+=(p[1]-my)**2;xy+=(p[0]-mx)*(p[1]-my)});
+  return [xx/(n-1),xy/(n-1),yy/(n-1)];
+}
+let pts1=points(.65);
+drawScatter(document.getElementById("scatter1"),pts1);
+
+let pts=points(.70);
+const c2=document.getElementById("corr"), cv=document.getElementById("corrVal");
+function update(){
+  const r=+c2.value; cv.textContent=r.toFixed(2); pts=points(r); drawScatter(document.getElementById("scatter2"),pts);
+  const [xx,xy,yy]=covariance(pts);
+  document.getElementById("vxx").textContent=xx.toFixed(2);
+  document.getElementById("vxy").textContent=xy.toFixed(2);
+  document.getElementById("vyx").textContent=xy.toFixed(2);
+  document.getElementById("vyy").textContent=yy.toFixed(2);
+  let text;
+  if(r>.45) text="Strong positive relationship: the features tend to increase together.";
+  else if(r>.12) text="Positive relationship: larger X values tend to accompany larger Y values.";
+  else if(r<-.45) text="Strong negative relationship: as one feature increases, the other tends to decrease.";
+  else if(r<-.12) text="Negative relationship: larger X values tend to accompany smaller Y values.";
+  else text="Weak linear relationship: the points have little overall upward or downward direction.";
+  document.getElementById("interpretation").textContent=text;
+}
+c2.addEventListener("input",update);
+document.getElementById("newData").onclick=update;
+update();
+
+const shape=points(.82); drawScatter(document.getElementById("shapeCanvas"),shape);
+
+function showAnswer(){document.getElementById("answer").classList.toggle("show")}
+window.addEventListener("scroll",()=>{
+  const max=document.documentElement.scrollHeight-window.innerHeight;
+  document.getElementById("progress").style.width=(window.scrollY/max*100)+"%";
+});
+</script>
+</body>
+</html>
